@@ -66,6 +66,7 @@
     <Compile Include="Commands\AddAllDemoSnippets.cs" />
     <Compile Include="Commands\AddToToolbox.cs" />
     <Compile Include="Commands\BaseCommand.cs" />
+    <Compile Include="Commands\EnableSnippetsCommand.cs" />
     <Compile Include="Commands\RefreshThisFileInToolbox.cs" />
     <Compile Include="Commands\RemoveEmptyTabs.cs" />
     <Compile Include="DemoSnippetsLineType.cs" />
@@ -80,6 +81,7 @@
     <Compile Include="OutputPane.cs" />
     <Compile Include="Commands\RemoveAllDemoSnippets.cs" />
     <Compile Include="DemoSnippetRunningDocTableEvents.cs" />
+    <Compile Include="SnippetsParser.cs" />
     <Compile Include="SponsorDetector.cs" />
     <Compile Include="SponsorRequestHelper.cs" />
     <Compile Include="ToolboxEntry.cs" />

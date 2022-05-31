@@ -125,9 +125,6 @@ namespace DemoSnippets
             return result;
         }
 
-        private string RemoveBlankLinesFromEnds(string snippet)
-        {
-            return snippet.Trim('\r', '\n');
-        }
+        private string RemoveBlankLinesFromEnds(string snippet) => snippet.Trim('\r', '\n');
     }
 }

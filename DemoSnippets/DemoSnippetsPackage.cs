@@ -3,7 +3,6 @@
 // </copyright>
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -48,6 +47,24 @@ namespace DemoSnippets
             {
                 var options = (OptionPageGrid)this.GetDialogPage(typeof(OptionPageGrid));
                 return options.RefreshOnFileSave;
+            }
+        }
+
+        public bool IsAutoLoadUnloadFromFileSystemEnabled
+        {
+            get
+            {
+                var options = (OptionPageGrid)this.GetDialogPage(typeof(OptionPageGrid));
+                return options.AutoLoadUnloadFromFileSystem;
+            }
+        }
+
+        public string FileSystemSnippetLocation
+        {
+            get
+            {
+                var options = (OptionPageGrid)this.GetDialogPage(typeof(OptionPageGrid));
+                return options.FileSystemSnippetLocation;
             }
         }
 
@@ -105,14 +122,18 @@ namespace DemoSnippets
             runningDocumentTable.Advise(plugin);
         }
 
-        private void HandleCloseSolution(object sender, EventArgs e)
-        {
-            this.JoinableTaskFactory.RunAsync(() => this.HandleCloseSolutionAsync(this.DisposalToken)).Task.LogAndForget("DemoSnippets");
-        }
+        private void HandleCloseSolution(object sender, EventArgs e) => this.JoinableTaskFactory.RunAsync(() => this.HandleCloseSolutionAsync(this.DisposalToken)).Task.LogAndForget("DemoSnippets");
 
         private async Task HandleCloseSolutionAsync(CancellationToken cancellationToken)
         {
             if (this.IsAutoLoadEnabled)
+            {
+                await OutputPane.Instance.WriteAsync("Removing DemoSnippets from the Toolbox as solution has been closed.");
+
+                await ToolboxInteractionLogic.RemoveAllDemoSnippetsAsync(cancellationToken);
+            }
+
+            if (this.IsAutoLoadUnloadFromFileSystemEnabled)
             {
                 await OutputPane.Instance.WriteAsync("Removing DemoSnippets from the Toolbox as solution has been closed.");
 
@@ -134,10 +155,7 @@ namespace DemoSnippets
             return value is bool isSolOpen && isSolOpen;
         }
 
-        private void HandleOpenSolution(object sender, EventArgs e)
-        {
-            this.JoinableTaskFactory.RunAsync(() => this.HandleOpenSolutionAsync(this.DisposalToken)).Task.LogAndForget("DemoSnippets");
-        }
+        private void HandleOpenSolution(object sender, EventArgs e) => this.JoinableTaskFactory.RunAsync(() => this.HandleOpenSolutionAsync(this.DisposalToken)).Task.LogAndForget("DemoSnippets");
 
         private async Task HandleOpenSolutionAsync(CancellationToken cancellationToken)
         {
@@ -170,6 +188,34 @@ namespace DemoSnippets
             else
             {
                 await OutputPane.Instance.WriteAsync("Automatic loading of .demosnippets files has been disabled.");
+            }
+
+            if (this.IsAutoLoadUnloadFromFileSystemEnabled)
+            {
+                // Get all *.demosnippets files from the filesystem
+                // Do this now for performance and to avoid thread issues
+                if (await this.GetServiceAsync(typeof(DTE)) is DTE dte)
+                {
+                    var fileSystemSnippetLocation = this.FileSystemSnippetLocation;
+
+                    if (!string.IsNullOrWhiteSpace(fileSystemSnippetLocation) && Directory.Exists(fileSystemSnippetLocation))
+                    {
+                        var (fileCount, snippetCount) = await ToolboxInteractionLogic.ProcessAllSnippetFilesFromFilesystemAsync(fileSystemSnippetLocation);
+
+                        var filePlural = fileCount == 1 ? string.Empty : "s";
+                        var snippetPlural = snippetCount == 1 ? string.Empty : "s";
+
+                        await OutputPane.Instance.WriteAsync($"Added {snippetCount} snippet{snippetPlural}, from {fileCount} file{filePlural}.");
+                    }
+                    else
+                    {
+                        await OutputPane.Instance.WriteAsync("Could not access file location to use to find .demosnippets files.");
+                    }
+                }
+            }
+            else
+            {
+                await OutputPane.Instance.WriteAsync("Automatic loading of .demosnippets files from file system has been disabled.");
             }
         }
     }

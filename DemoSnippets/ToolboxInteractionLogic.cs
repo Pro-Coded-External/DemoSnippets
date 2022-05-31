@@ -26,10 +26,7 @@ namespace DemoSnippets
 
         private readonly AsyncPackage package;
 
-        public ToolboxInteractionLogic(AsyncPackage package)
-        {
-            this.package = package ?? throw new ArgumentNullException(nameof(package));
-        }
+        public ToolboxInteractionLogic(AsyncPackage package) => this.package = package ?? throw new ArgumentNullException(nameof(package));
 
         public static ToolboxInteractionLogic Instance { get; private set; }
 
@@ -59,6 +56,27 @@ namespace DemoSnippets
                 }
 
                 await AddToToolboxAsync(item.Tab, item.Label, item.Snippet, Path.GetFileName(filePath));
+                addedCount += 1;
+            }
+
+            return addedCount;
+        }
+
+        public static async Task<int> LoadToolboxItemsFromFilesystemAsync(string filePath)
+        {
+            var dsp = new SnippetsParser();
+            var toAdd = dsp.GetItemsToAdd(filePath);
+
+            var addedCount = 0;
+
+            foreach (var item in toAdd)
+            {
+                if (string.IsNullOrWhiteSpace(item.Tab))
+                {
+                    item.Tab = DefaultTabName;
+                }
+
+                await AddToToolboxAsync(item.Tab, item.Label, item.Snippet, filePath); //Path.GetFileName(filePath));
                 addedCount += 1;
             }
 
@@ -238,6 +256,36 @@ namespace DemoSnippets
             {
                 await OutputPane.Instance.WriteAsync($"Loading snippets from: {snippetFile}");
 
+                var added = await LoadToolboxItemsAsync(snippetFile);
+
+                if (added == 0)
+                {
+                    await OutputPane.Instance.WriteAsync($"Found nothing to add in {snippetFile}");
+                }
+                else
+                {
+                    fileCount += 1;
+                    itemsCount += added;
+                }
+            }
+
+            return (fileCount, itemsCount);
+        }
+
+        public static async Task<(int files, int snippets)> ProcessAllSnippetFilesFromFilesystemAsync(string strDirectory)
+        {
+            await OutputPane.Instance.WriteAsync($"Loading *.demosnippets files under: {strDirectory}");
+
+            var allSnippetFiles = Directory.EnumerateFiles(strDirectory, "*.demosnippets*", SearchOption.AllDirectories);
+
+            var fileCount = 0;
+            var itemsCount = 0;
+
+            foreach (var snippetFile in allSnippetFiles)
+            {
+                await OutputPane.Instance.WriteAsync($"Loading snippets from: {snippetFile}");
+
+                //var added = await LoadToolboxItemsFromFilesystemAsync(snippetFile);
                 var added = await LoadToolboxItemsAsync(snippetFile);
 
                 if (added == 0)
